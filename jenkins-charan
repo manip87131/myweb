@@ -1,0 +1,27 @@
+pipeline{
+    agent any
+     stages{
+        stage("git checkout"){
+            steps{
+                git credentialsId: 'deploy-ssh', url: 'https://github.com/manip87131/myweb.git'
+                }
+            }
+         stage("maven build"){
+             steps{
+                  sh "mvn clean package"
+                  sh "mv target/*.war target/myweb.war"
+                  }
+             }
+          stage("deploy-dev"){
+               steps{
+                  sshagent(['ssh-dec']) {
+                  sh """
+                        scp -o stricthostkeychecking=no target/myweb.war ec2-user@172.31.19.88:/home/ec2-user/apache-tomcat-8.5.78/weapps/
+                        ssh ec2-user@172.31.19.88 /home/ec2-user/apache-tomcat-8.5.78/bin/shutdown.sh
+                        ssh ec2-user@172.31.19.88 /home/ec2-user/apache-tomcat-8.5.78/bin/startup.sh
+                   """
+                   }
+                }
+              }
+            }
+          } 
